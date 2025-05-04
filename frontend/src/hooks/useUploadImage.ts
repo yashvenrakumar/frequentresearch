@@ -11,6 +11,7 @@ const useUploadImage = () => {
   const [error, setError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<UploadImageResponse | null>(null);
   const { showSnackbar } = useSnackbar();
+  const apiUrl = import.meta.env.VITE_API_URL ?? "";
 
   const uploadImage = async (file: File) => {
     const formData = new FormData();
@@ -21,7 +22,7 @@ const useUploadImage = () => {
       setError(null);
 
       const response = await fetch(
-        "http://localhost:5000/api/v1/users/upload",
+        `${apiUrl}/users/upload`,
         {
           method: "POST",
           body: formData,
@@ -44,7 +45,7 @@ const useUploadImage = () => {
       dispatch(updateUploadImage(data)); // Dispatch the action to update the Redux store
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-        showSnackbar(err.message, "error");
+      showSnackbar(err.message, "error");
       setError(err.message || "Failed to upload image");
     } finally {
       setLoading(false);

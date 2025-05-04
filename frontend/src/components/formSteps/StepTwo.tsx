@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../redux/rootReducer"; // ✅ Correct import
 import { updateStep, updateProfileInfo } from "../../redux/slice/userAuthSlice";
@@ -28,7 +28,7 @@ const StepTwo = () => {
     if (formData.profession === "Other") {
       dispatch(updateProfileInfo({ profession: otherProfession }));
     }
-  }, [formData, dispatch]);
+  }, [formData]);
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-10 max-w-2xl mx-auto space-y-8">

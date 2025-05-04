@@ -4,9 +4,10 @@ import { AuthResponse, LoignPayload, RegisterPayload, RegisterResponse, User } f
 import axios, { AxiosError } from 'axios';
 import { updateLoginInfo } from '../redux/slice/userAuthSlice';
 import { useDispatch } from 'react-redux';
-
+ 
 const useAuth = () => {
   const dispatch=useDispatch();
+   
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);

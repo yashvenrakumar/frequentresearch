@@ -1,48 +1,77 @@
 import { useState } from "react";
-// import useAuth from "../../hooks/useAuth";
 import { useSnackbar } from "../../components/SnackbarProvider";
+import { useResetPassword } from "../../hooks/useResetPassword";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/rootReducer";
+
+const getPasswordStrength = (
+  password: string
+): "Weak" | "Moderate" | "Strong" => {
+  let strength = 0;
+  if (password.length >= 6) strength++;
+  if (/[A-Z]/.test(password)) strength++;
+  if (/[0-9]/.test(password)) strength++;
+  if (/[!@#$%^&*]/.test(password)) strength++;
+
+  if (strength <= 2) return "Weak";
+  if (strength === 3) return "Moderate";
+  return "Strong";
+};
 
 const ResetPassword = () => {
   const { showSnackbar } = useSnackbar();
-//   const { resetPassword } = useAuth(); // Assuming there's a resetPassword function
+
+  const { resetPassword } = useResetPassword();
+  // const [form, setForm] = useState({
+  // username: "",
+  // currentPassword: "",
+  // newPassword: "",
+  // });
+  const userProfile = useSelector((state: RootState) => state.userAuth.profile);
 
   const [formData, setFormData] = useState({
-    password: "",
-    confirmPassword: "",
+    currentPassword: "",
+    newPassword: "",
   });
 
   const [errors, setErrors] = useState({
-    password: "",
-    confirmPassword: "",
+    currentPassword: "",
+    newPassword: "",
   });
+
+  const [passwordStrength, setPasswordStrength] = useState<
+    "Weak" | "Moderate" | "Strong"
+  >("Weak");
 
   const validate = (): boolean => {
     let valid = true;
-    const tempErrors = { password: "", confirmPassword: "" };
+    const tempErrors = { currentPassword: "", newPassword: "" };
 
-    if (!formData.password) {
-      tempErrors.password = "Password is required";
-      valid = false;
-    } else if (formData.password.length < 6) {
-      tempErrors.password = "Password must be at least 6 characters";
-      valid = false;
-    } else if (!/[A-Z]/.test(formData.password)) {
-      tempErrors.password = "Must include an uppercase letter";
-      valid = false;
-    } else if (!/[0-9]/.test(formData.password)) {
-      tempErrors.password = "Must include a number";
-      valid = false;
-    } else if (!/[!@#$%^&*]/.test(formData.password)) {
-      tempErrors.password = "Must include a special character";
+    if (!formData.currentPassword) {
+      tempErrors.currentPassword = "Current password is required";
       valid = false;
     }
 
-    if (!formData.confirmPassword) {
-      tempErrors.confirmPassword = "Confirm Password is required";
+    if (!formData.newPassword) {
+      tempErrors.newPassword = "New password is required";
       valid = false;
-    } else if (formData.password !== formData.confirmPassword) {
-      tempErrors.confirmPassword = "Passwords do not match";
-      valid = false;
+    } else {
+      const strength = getPasswordStrength(formData.newPassword);
+      setPasswordStrength(strength);
+
+      if (formData.newPassword.length < 6) {
+        tempErrors.newPassword = "Password must be at least 6 characters";
+        valid = false;
+      } else if (!/[A-Z]/.test(formData.newPassword)) {
+        tempErrors.newPassword = "Must include an uppercase letter";
+        valid = false;
+      } else if (!/[0-9]/.test(formData.newPassword)) {
+        tempErrors.newPassword = "Must include a number";
+        valid = false;
+      } else if (!/[!@#$%^&*]/.test(formData.newPassword)) {
+        tempErrors.newPassword = "Must include a special character";
+        valid = false;
+      }
     }
 
     setErrors(tempErrors);
@@ -50,16 +79,26 @@ const ResetPassword = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "newPassword") {
+      setPasswordStrength(getPasswordStrength(value));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
+      resetPassword({
+        username: userProfile?.username ?? "",
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+      });
       showSnackbar("Password reset successful!", "success");
-    //   await resetPassword({ password: ""});
-      setFormData({ password: "", confirmPassword: "" });
-      setErrors({ password: "", confirmPassword: "" });
+      setFormData({ currentPassword: "", newPassword: "" });
+      setErrors({ currentPassword: "", newPassword: "" });
+      setPasswordStrength("Weak");
     }
   };
 
@@ -73,10 +112,12 @@ const ResetPassword = () => {
           Reset Password
         </h2>
         <form onSubmit={handleSubmit} className="space-y-5 text-left">
-          {["password", "confirmPassword"].map((field, idx) => (
+          {["currentPassword", "newPassword"].map((field, idx) => (
             <div key={idx}>
-              <label className="block text-gray-700 font-medium mb-2 capitalize">
-                {field === "confirmPassword" ? "Confirm Password" : "Password"}
+              <label className="block text-gray-700 font-medium mb-2">
+                {field === "currentPassword"
+                  ? "Current Password"
+                  : "New Password"}
               </label>
               <input
                 type="password"
@@ -89,9 +130,22 @@ const ResetPassword = () => {
                     : "border-gray-300 focus:ring-blue-500"
                 } transition duration-200`}
                 placeholder={`Enter your ${
-                  field === "confirmPassword" ? "Confirm Password" : "Password"
-                }`}
+                  field === "currentPassword" ? "current" : "new"
+                } password`}
               />
+              {field === "newPassword" && (
+                <p
+                  className={`mt-1 text-sm font-medium ${
+                    passwordStrength === "Strong"
+                      ? "text-green-600"
+                      : passwordStrength === "Moderate"
+                      ? "text-yellow-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  Strength: {passwordStrength}
+                </p>
+              )}
               {errors[field as keyof typeof errors] && (
                 <p className="text-red-500 text-sm mt-1">
                   {errors[field as keyof typeof errors]}

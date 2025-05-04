@@ -9,8 +9,12 @@ function Navbar() {
           <Link to="/" className="text-white mx-4 hover:underline">
             Home
           </Link>
-          <Link to="/login" className="text-white mx-4 hover:underline">
-            Login
+
+          <Link
+            to="/reset-password"
+            className="text-white mx-4 hover:underline"
+          >
+            Reset Password
           </Link>
         </div>
       </div>

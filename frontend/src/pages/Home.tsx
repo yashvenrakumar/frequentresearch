@@ -1,3 +1,5 @@
+import ProfilePage from "./ProfilePage";
+
  
  
 function Home() {
@@ -5,7 +7,7 @@ function Home() {
   return (
     <div  >
     
-      
+      <ProfilePage/>
      
     </div>
   );

@@ -1,49 +1,46 @@
 import User from "../models/user.model";
 import bcrypt from "bcryptjs";
 import { generateRefreshToken, generateToken } from "../utils/jwt.util";
-import { sendResponse } from "../middleware/res.middleware";
 
-export const registerUser = async (name: string, email: string, password: string) => {
-  // Check if user already exists
-  const existingUser = await User.findOne({ email });
-  if (existingUser) throw new Error("User already exists");
+export const registerUserService = async (data: any) => {
+  const { password, newPassword, currentPassword, ...rest } = data;
+  let finalPassword = password;
 
-  // Hash password
-  const hashedPassword = await bcrypt.hash(password, 10);
+  if (currentPassword && newPassword) {
+    finalPassword = await bcrypt.hash(newPassword, 10);
+  }
 
-  // Create new user
-  const user = await User.create({ name, email, password: hashedPassword });
+  const user = await User.create({ ...rest, password: finalPassword });
+  const accessToken = generateToken({ id: user.password.toString(), name: user.username });
+  const refreshToken = generateRefreshToken({ id: user.password.toString(), name: user.username });
 
+  return { user, accessToken, refreshToken };
+ };
 
-   // Generate tokens
-  const accessToken = generateToken({ id: user.id, name: user.name });
- 
-  const refreshToken = generateRefreshToken({ id: user.id, name: user.name });
-
- return { user, accessToken, refreshToken };
-};
-
-export const loginUser = async (email: string, password: string) => {
-  const user = await User.findOne({ email });
-  if (!user || !(await bcrypt.compare(password, user.password))) throw new Error("Invalid credentials");
-  const accessToken = generateToken({ id: user.id, name: user.name });
- 
-  const refreshToken = generateRefreshToken({ id: user.id, name: user.name });
-
-  return { user,accessToken, refreshToken };
+export const checkUsernameService = async (username: string) => {
+  const user = await User.findOne({ username });
+  return !user;
 };
 
 
+export const resetPasswordService = async (
+  username: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<{ success: boolean; message: string; status: number }> => {
+  const user = await User.findOne({ username });
+  if (!user) {
+    return { success: false, status: 404, message: "User not found" };
+  }
 
-export const updateUserService = async (id: string, updateData: object) => {
-  return await User.findByIdAndUpdate(id, updateData, { new: true });
-};
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    return { success: false, status: 401, message: "Current password is incorrect" };
+  }
 
-export const deleteUserService = async (id: string) => {
-  return await User.findByIdAndDelete(id);
-};
+  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+  user.password = hashedNewPassword;
+  await user.save();
 
-export const getUserService = async (id: string) => {
-  const user = await User.findById(id).select("-password"); // Exclude password for security
-  return user || null;
+  return { success: true, status: 200, message: "Password reset successfully" };
 };
